@@ -1,0 +1,1 @@
+# SmartCity5G-Makieta
