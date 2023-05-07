@@ -1,13 +1,14 @@
+#!/usr/bin/python3
+
 from flask import Flask, request
 import json
+from state_machine import StateMachine, WhereDrive
+import random
 
-# Enum kierunków ruchu:
-class WhereDrive():
-
-    GO_LEFT = 1
-    GO_RIGHT = 2
-    GO_STRAIGHT = 3
-    DESTINATION = 4
+remembered_token = 0
+TEST_USER = "user123"
+TEST_MD5 = 81548367024625717545001236878397010683
+states = StateMachine()
 
 """
 Funkcja check_authentication służy do sprawdzenia czy samochód przesłał
@@ -15,8 +16,13 @@ poprawny login i hasło i jeśli tak, do wygenerowania i zachowania na potem tok
 """
 def check_authentication(user: str, passw: int) -> str:
 
-    #Tu ma być kod, który wylicza token (Ola)
-    return "123" # placeholder
+    # Na "twardo" sprawdzanie danych logowania do testowania makiety
+    if user == TEST_USER and passw == TEST_MD5:
+        # print("Poprawne logowanie")
+        token = int(random.random() * 1000000000)
+
+    return token # zwracanie utworzonego tokenu
+
 
 """
 Funkcja which_direction służy do sprawdzenia w jakiej odległości jest samochód (o podanym tokenie),
@@ -24,8 +30,12 @@ do wyliczenia kierunku w jakim ten samochód ma jechać oraz zwrócenia go.
 """
 def which_direction(token: str, distance_cm: int) -> WhereDrive:
 
-    # Tu ma być kod do zamiany dystansu na kierunek (Ola)
-    return WhereDrive.GO_STRAIGHT
+    if token == remembered_token:
+        return states.stateAction(distance_cm)
+
+    return WhereDrive.ERROR
+
+#####################################################################
 
 app = Flask('serwer')
 
@@ -33,18 +43,20 @@ app = Flask('serwer')
 def authentication():
 
     data = json.loads(request.data)
+    print(data)
     if data["user"] and data["pass"]:
 
-
-        token = check_authentication(data["user"], data["pass"])
+        global remembered_token
+        remembered_token = check_authentication(data["user"], data["pass"])
 
     # Zmienna w jsonie: zmienna w pythonie
-    return {"token": token}
+    return {"token": remembered_token}
 
 @app.route('/direction', methods=['GET'])
 def direction():
 
     data = json.loads(request.data)
+    print(data)
     if data["token"] and data["distance_cm"]:
 
         turn_direction = which_direction(data["token"], data["distance_cm"])
